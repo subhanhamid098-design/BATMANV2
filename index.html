@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Batman Bot</title>
+<link href="https://fonts.cdnfonts.com/css/batman-forever" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Batman Forever', Arial, sans-serif;
+    background: #0a0a0a;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; margin: 0; position: relative;
+    color: #feda4a;
+  }
+  .chat-container {
+    width: 400px; height: 700px; background: #111;
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.7);
+    border: 2px solid #feda4a;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .chat-header {
+    background: #000; color: #feda4a;
+    padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+    font-size: 20px; font-weight: 900; position: relative;
+    text-shadow: 0 0 8px #feda4a, 0 0 16px #feda4a, 0 0 24px #feda4a;
+  }
+  .chat-header::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140%; height: 140%;
+    background: radial-gradient(circle, rgba(254,218,74,0.15) 0%, transparent 60%);
+    border-radius: 50%;
+    z-index: 0;
+  }
+  .chat-header img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #feda4a; z-index: 1; }
+  #voiceToggle, #vibrationToggle {
+    position: absolute; top: 12px; background: #000;
+    color: #feda4a; border: 1px solid #feda4a; border-radius: 50px;
+    padding: 6px 12px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 0 8px #feda4a; z-index: 2; font-size: 12px;
+  }
+  #voiceToggle { right: 12px; }
+  #vibrationToggle { right: 120px; }
+  .chat-messages { flex: 1; padding: 14px; overflow-y: auto; background: #0a0a0a; display: flex; flex-direction: column; gap: 12px; }
+  .user-wrapper, .bot-wrapper { display: flex; align-items: flex-end; gap: 10px; width: 100%; }
+  .user-wrapper { justify-content: flex-end; } .bot-wrapper { justify-content: flex-start; }
+  .user-avatar, .bot-avatar { width: 38px; height: 38px; border-radius: 50%; flex: 0 0 38px; object-fit: cover; }
+  .bot-avatar { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{ transform: scale(1); box-shadow:0 0 0 rgba(255,255,255,0);}50%{transform:scale(1.05);box-shadow:0 0 8px rgba(255,255,255,0.3);} }
+  .message {
+    padding: 12px 15px; max-width: 80%; line-height: 1.45; font-size: 15px;
+    word-wrap: break-word; animation: fadeInUp 0.25s ease; position: relative; font-weight: bold;
+  }
+  .user-message {
+    background: #222; color: #ccc; border: 2px solid #444;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 80%, 90% 80%, 85% 100%, 80% 80%, 0% 80%);
+  }
+  .bot-message {
+    background: #000; color: #feda4a; border: 2px solid #feda4a;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 80%, 85% 80%, 80% 100%, 75% 80%, 0% 80%);
+  }
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .chat-input { display: flex; align-items: center; padding: 10px; background: #111; border-top: 1px solid #333; }
+  .chat-input input { flex: 1; padding: 12px 14px; border: none; outline: none; background: #222; color: #feda4a; border-radius: 22px; }
+  .send-btn { margin-left: 10px; width: 46px; height: 46px; border-radius: 50%; border: none; color: #feda4a; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #000; border:1px solid #feda4a; }
+  .timestamp { font-size: 10px; color: #aaa; margin-top: 4px; text-align: right; }
+  .typing-dots span { display:inline-block;width:6px;height:6px;margin:0 2px;background:#feda4a;border-radius:50%;animation:blink 1.4s infinite; }
+  .typing-dots span:nth-child(2){animation-delay:0.2s;}
+  .typing-dots span:nth-child(3){animation-delay:0.4s;}
+  @keyframes blink{0%,80%,100%{opacity:0;}40%{opacity:1;}}
+  .quick-replies { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .quick-replies button { background:#000; color:#feda4a; border:1px solid #feda4a; border-radius:20px; padding:6px 14px; font-size:13px; cursor:pointer; transition:transform 0.2s;}
+  .quick-replies button:hover{transform:scale(1.05);}
+  .export-btn { background:#111; color:#feda4a; border:1px solid #feda4a; border-radius:16px; padding:6px 12px; margin:6px; cursor:pointer; font-size:13px; align-self:flex-end;}
+  .export-btn:hover{background:#000;}
+  .chat-messages::-webkit-scrollbar{width:8px;}
+  .chat-messages::-webkit-scrollbar-thumb{background:#333;border-radius:8px;}
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-header">
+    <img src="https://i.postimg.cc/D0Kjz3mZ/dc-batman-head-cartoon-sticker.png" alt="Bot">
+    Batman Bot
+    <button id="voiceToggle" title="Toggle Bot Voice">🎤 ON</button>
+    <button id="vibrationToggle" title="Toggle Vibration">🔔 ON</button>
+  </div>
+
+  <div id="chatMessages" class="chat-messages"></div>
+
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Type your message...">
+    <button class="send-btn" id="sendBtn">➤</button>
+  </div>
+
+  <button class="export-btn" id="exportBtn">Export Chat</button>
+</div>
+
+<audio id="userSound" src="https://www.myinstants.com/media/sounds/click.mp3"></audio>
+<audio id="botSound" src="https://www.myinstants.com/media/sounds/pop-up.mp3"></audio>
+
+<script>
+const USER_AVATAR = "https://i.postimg.cc/1RCWGmd0/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg";
+const BOT_AVATAR  = "https://i.postimg.cc/D0Kjz3mZ/dc-batman-head-cartoon-sticker.png";
+let sessionMessages = [];
+let voiceOn = true;
+let vibrationOn = true;
+const userSound = document.getElementById("userSound");
+const botSound = document.getElementById("botSound");
+
+function speakBot(reply){
+  if(!voiceOn) return;
+  if('speechSynthesis' in window){
+    const utter = new SpeechSynthesisUtterance(reply.replace(/[^\w\s]/g,''));
+    const voices = window.speechSynthesis.getVoices();
+    let maleVoice = voices.find(v=> /male|david|mark|john|alex/i.test(v.name));
+    if(!maleVoice) maleVoice = voices[0];
+    utter.voice = maleVoice;
+    utter.pitch = 1; utter.rate = 1;
+    window.speechSynthesis.speak(utter);
+  }
+}
+
+function sanitize(text){ return text.trim(); }
+function isProfane(text){ const bad=["badword1","badword2"]; return bad.some(w=>text.toLowerCase().includes(w)); }
+function showTyping(){
+  const typing=document.createElement("div"); typing.id="typingIndicator"; typing.className="bot-wrapper";
+  typing.innerHTML=`<img class="bot-avatar" src="${BOT_AVATAR}"><div class="message bot-message"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  const box=document.getElementById("chatMessages");
+  box.appendChild(typing); box.scrollTop=box.scrollHeight;
+}
+function removeTyping(){ const el=document.getElementById("typingIndicator"); if(el) el.remove(); }
+function randomChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function appendMessage(type,text,quickReplies=[]){
+  const wrap = document.createElement("div");
+  wrap.className = type==="user"?"user-wrapper":"bot-wrapper";
+  const avatar = document.createElement("img");
+  avatar.className = type==="user"?"user-avatar":"bot-avatar";
+  avatar.src = type==="user"?USER_AVATAR:BOT_AVATAR;
+  const bubble = document.createElement("div");
+  bubble.className = "message "+(type==="user"?"user-message":"bot-message");
+  bubble.textContent = text;
+  const timestamp = document.createElement("div");
+  timestamp.className="timestamp";
+  const now=new Date();
+  timestamp.textContent=now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+  bubble.appendChild(timestamp);
+  wrap.appendChild(type==="user"?bubble:avatar);
+  wrap.appendChild(type==="user"?avatar:bubble);
+  const box=document.getElementById("chatMessages");
+  box.appendChild(wrap); box.scrollTop = box.scrollHeight;
+  if(type==="user") userSound.play(); else { if(vibrationOn) botSound.play(); }
+  if(quickReplies.length>0){
+    const qrDiv = document.createElement("div");
+    qrDiv.className="quick-replies";
+    quickReplies.forEach(reply=>{
+      const btn=document.createElement("button");
+      btn.textContent = reply;
+      btn.onclick = ()=>{ document.getElementById("userInput").value=reply; sendMessage(); };
+      qrDiv.appendChild(btn);
+    });
+    box.appendChild(qrDiv); box.scrollTop = box.scrollHeight;
+  }
+  sessionMessages.push(`${type.toUpperCase()}: ${text}`);
+}
+
+function getBotReply(userText){
+  const greetings=["Hello","Hi there","Hey"];
+  const jokes=["Why did the computer go to the doctor? It caught a virus","Why do Java developers wear glasses? Because they don't C#"];
+  const tips=["Tip: Type 'game' to play a number guessing game","Tip: Type 'joke' to hear a joke"];
+  userText=userText.toLowerCase();
+  if(userText.includes("hi")||userText.includes("hello")) return randomChoice(greetings);
+  if(userText.includes("joke")) return randomChoice(jokes);
+  if(userText.includes("tip")) return randomChoice(tips);
+  if(userText.includes("game")) return "Let's play! Guess a number between 1 and 5";
+  return "Can you rephrase that?";
+}
+
+function sendMessage(){
+  const input=document.getElementById("userInput");
+  let text=sanitize(input.value);
+  if(!text){ appendMessage("bot","Please type something."); return; }
+  if(text.length>500){ appendMessage("bot","Message too long! Max 500 chars."); return; }
+  if(/^[^a-zA-Z0-9]+$/.test(text)){ appendMessage("bot","Please enter meaningful text."); return; }
+  if(isProfane(text)){ appendMessage("bot","Please avoid offensive words."); return; }
+
+  appendMessage("user",text);
+  input.value="";
+  showTyping();
+
+  setTimeout(()=>{
+    removeTyping();
+    let reply = getBotReply(text);
+    if(reply.includes("Guess a number")){
+      appendMessage("bot",reply,["1","2","3","4","5"]);
+    } else { appendMessage("bot",reply); }
+    speakBot(reply);
+  },600);
+}
+
+document.getElementById("voiceToggle").addEventListener("click",()=>{
+  voiceOn = !voiceOn;
+  document.getElementById("voiceToggle").textContent = voiceOn?"🎤 ON":"🔇 OFF";
+});
+document.getElementById("vibrationToggle").addEventListener("click",()=>{
+  vibrationOn = !vibrationOn;
+  document.getElementById("vibrationToggle").textContent = vibrationOn?"🔔 ON":"🔕 OFF";
+});
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  if(sessionMessages.length===0){ alert("No chat to export."); return; }
+  const blob = new Blob([sessionMessages.join("\n")], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `chat_${new Date().toISOString().replace(/[:.]/g,"-")}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById("userInput").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); sendMessage(); } });
+document.getElementById("sendBtn").addEventListener("click",sendMessage);
+
+let idleTimer;
+function resetIdleTimer(){ clearTimeout(idleTimer); idleTimer=setTimeout(()=>{ appendMessage("bot","Tip: Type 'joke', 'tip', or 'game' for fun!"); },60000); }
+document.addEventListener("mousemove",resetIdleTimer);
+document.addEventListener("keydown",resetIdleTimer);
+resetIdleTimer();
+</script>
+
+</body>
+</html>
